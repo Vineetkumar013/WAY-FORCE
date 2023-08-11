@@ -4,8 +4,14 @@ const objectId = mongoose.Types.ObjectId;
 
 const UserSchema = new mongoose.Schema(
     {
+        employerName:{
+            type:String
+        },
         mobile: {
             type: String,
+        },
+        email:{
+            type:String
         },
         otp: {
             type: String,
@@ -59,13 +65,24 @@ const UserSchema = new mongoose.Schema(
             type: String,
             default: "false"
         },
-        manpowerId: {
+        manpowerId: [{
             type: objectId,
-            ref: "ManPower",
-        },
+            ref: "User",
+            // default:""
+        }],
+        agentId:[{
+            type: objectId,
+            ref: "User", 
+        }],
+        
         mobileVerified: {
             type: Boolean,
             default: false,
+        },
+        status:{
+            type:String,
+            // enum:["hold","pending"]
+            default:"pending"
         },
         /////////////////////////////
         state: {
@@ -108,7 +125,15 @@ const UserSchema = new mongoose.Schema(
             type: String
         },
         address: {
-            type: String
+            state: String,
+            city: String,
+            country: String,
+            pinCode: Number,
+            landmark: String,
+            postOffice: String,
+            address: String,
+            village: String,
+            block: String,
         },
         village: {
             type: String
@@ -123,7 +148,6 @@ const UserSchema = new mongoose.Schema(
         language: [String],
         bio: String,
         experience: Number,
-
         skills: [{ type: Schema.Types.ObjectId }],
         jobType: { type: String },
         serviceLocation: String,
@@ -151,12 +175,56 @@ const UserSchema = new mongoose.Schema(
             type: String,
             enum: ["manpower", "employer", "agent"],
             default: "employer"
+        },
+        obj:{
+            type:Array
+        },
+        orderId:{
+            type:String
+        },
+        startTime:{
+            type:String
+        },
+        endTime:{
+            type:String
+        },
+        statusOfCompletion:{
+            type:String
+        },
+        userVerification:{
+            type:String,
+            default:"false"
+        },
+        manpowerObj:[{
+
+        }],
+        agentName:{
+            type:String
+        },
+        agentAddress:{
+            type:String
+        },
+        agentServiceLocation:{
+            type:String
+        },
+        agentBusinessName:{
+            type:String
+        },
+        agentStrength:{
+            type:String
+        },
+        uploadaadhar:{
+            type:String
+        },
+        uploadPanCard:{
+            type:String
         }
+
     },
     {
         timestamps: true,
     }
-);
+)
 
-const UserModel = mongoose.model("User", UserSchema);
-module.exports = UserModel;
+const UserModel = mongoose.model("User", UserSchema)
+module.exports = UserModel

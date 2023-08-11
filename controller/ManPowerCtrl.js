@@ -1,9 +1,97 @@
-const ManPower = require("../models/ManPowerModel");
-const OTP = require("../config/OTP-Generate");
+const ManPower = require("../models/ManPowerModel")
+const OTP = require("../config/OTP-Generate")
+const Employerr = require("../models/employerModel")
+const Manpowerr = require("../models/ManPowerModel")
+const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
+const twilio = require("twilio");
+// var newOTP = require("otp-generators");
+const User = require("../models/user")
 
 
-const signupManpower = async (req, res) => {
+const accountSid = "AC0f17e37b275ea67e2e66d289b3a0ef84";
+const authToken = "44926560c80314dbec0cda2090ab4085";
+const twilioPhoneNumber = "+14708354405";
+const client = twilio(accountSid, authToken);
+
+
+exports.registrationManpower = async (req, res) => {
+  try {
+
+    const { mobile,otp } = req.body;
+
+    // res.status(200).json({ message: "OTP sent successfully" });
+
+    var user = await User.findOne({ mobile: mobile, userType: "manpower" })
+
+    if (!user) {
+
+      // const otp = Math.floor(1000 + Math.random() * 9000);
+    
+      // // Create and send the SMS with the OTP
+      // await client.messages.create({
+      //   to: mobile,
+      //   from: twilioPhoneNumber,
+      //   body: `Your OTP is: ${otp}`,
+      // });
+
+      // req.body.otp = OTP.generateOTP()
+      // req.body.otpExpiration = new Date(Date.now() + 5 * 60 * 1000)
+      // req.body.accountVerification = false
+      req.body.userType = "manpower"
+
+      // let referalUser = null;
+
+      const userCreate = await User.create({
+        mobile,
+        otp,
+        // referalCodeUnique,
+        ...req.body
+      })
+
+      let obj = {
+        id: userCreate._id,
+        otp: userCreate.otp,
+        mobile: userCreate.mobile,
+      };
+
+      res.status(200).send({
+        status: 200,
+        message: "Registered successfully ",
+        data: obj
+      });
+    } else {
+      return res.status(409).send({ status: 409, msg: "Already Exit" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+exports.sendotpManpower = async (req, res) => {
+  console.log("hi");
+  try {
+    const { phoneNumber } = req.body;
+
+    // Generate a random 6-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    
+    // Create and send the SMS with the OTP
+    await client.messages.create({
+      to: phoneNumber,
+      from: twilioPhoneNumber,
+      body: `Your OTP is: ${otp}`,
+    });
+
+    res.status(200).json({ message: "OTP sent successfully",otp:otp });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to send OTP" });
+  }
+}
+
+exports.signupManpower = async (req, res) => {
   try {
     const { mobile } = req.body;
 
@@ -30,12 +118,12 @@ const signupManpower = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
-};
+}
 
-const verifyOtp = async (req, res) => {
+exports.verifyOtp = async (req, res) => {
   try {
     const { otp } = req.body;
-    const user = await ManPower.findOne({ _id: req.params.id });
+    const user = await User.findOne({ _id: req.params.id });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -55,9 +143,9 @@ const verifyOtp = async (req, res) => {
     console.error(err);
     return createResponse(res, 500, "Internal server error");
   }
-};
+}
 
-const detailSignup = async (req, res) => {
+exports.detailSignup = async (req, res) => {
   try {
     const id = req.params.id;
     const {
@@ -73,13 +161,15 @@ const detailSignup = async (req, res) => {
       minSalary,
       maxSalary,
       skills,
+      city,
+      state,
       jobType,
       serviceLocation,
       documents,
     } = req.body;
 
     // Check if the user exists
-    const manPower = await ManPower.findById(id);
+    const manPower = await User.findById(id);
     if (!manPower) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -94,12 +184,15 @@ const detailSignup = async (req, res) => {
     manPower.language = language;
     manPower.bio = bio;
     manPower.experience = experience;
-    manPower.minSalary = minSalary;
+    manPower.miniSalary = minSalary;
     manPower.maxSalary = maxSalary;
     manPower.skills = skills;
     manPower.jobType = jobType;
     manPower.serviceLocation = serviceLocation;
     manPower.documents = documents;
+    manPower.city = city;
+    manPower.state = state;
+    // manPower.otp = OTP.generateOTP();
 
     await manPower.save();
 
@@ -107,12 +200,12 @@ const detailSignup = async (req, res) => {
       .status(200)
       .json({ message: "Details filled successfully", data: manPower });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({ error: "Something went wrong" });
   }
-};
+}
 
-const workDetails = async (req, res) => {
+exports.workDetails = async (req, res) => {
   try {
     const manpowerId = req.params.id;
     const {
@@ -127,7 +220,7 @@ const workDetails = async (req, res) => {
     } = req.body;
 
     // Check if manpower with the given ID exists
-    const manpower = await ManPower.findById(manpowerId);
+    const manpower = await User.findById(manpowerId);
 
     if (!manpower) {
       return res.status(404).json({ error: "Manpower not found" });
@@ -204,9 +297,9 @@ const workDetails = async (req, res) => {
     console.error("Error updating manpower work details:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
-};
+}
 
-const manpowerDocument = async (req, res) => {
+exports.manpowerDocument = async (req, res) => {
     try {
       // let profile = req.files["profile"];
       let Aadhar = req.files["aadharCard"];
@@ -215,7 +308,7 @@ const manpowerDocument = async (req, res) => {
       req.body.AadharCard = Aadhar[0].path;
       req.body.uploadPanCard = panCard[0].path;
 
-      const manpower = await ManPower.findOneAndUpdate(
+      const manpower = await User.findOneAndUpdate(
         { _id: req.params.id },
         {
           $set: {
@@ -234,33 +327,43 @@ const manpowerDocument = async (req, res) => {
       console.error("Error uploading documents:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
-};
+}
 
-const loginManpower = async (req, res) => {
+exports.loginManpower = async (req, res) => {
   try {
-    const { mobile, otp } = req.body;
+    const { mobile,otp } = req.body;
 
-    if (!mobile || !otp) {
+    if (!mobile ) {
       return res
         .status(400)
-        .json({ error: "Mobile number and OTP are required" });
+        .json({ error: "Mobile number required" });
     }
+    // Generate a random 6-digit OTP
+    // const otp = Math.floor(1000 + Math.random() * 9000);
+    
+    // Create and send the SMS with the OTP
+    // await client.messages.create({
+    //   to: mobile,
+    //   from: twilioPhoneNumber,
+    //   body: `Your OTP is: ${otp}`,
+    // });
 
-    const manpower = await ManPower.findOne({ mobile });
+    const manpower = await User.findOne({ mobile:mobile , userType: "manpower"});
     if (!manpower) {
       return res.status(404).json({ error: "Manpower not found" });
     }
 
-    if (manpower.otp !== otp) {
-      return res.status(401).json({ error: "Invalid OTP" });
-    }
+    manpower.otp = otp
+    manpower.save()
 
-    const token = jwt.sign({ manpowerId: manpower.id }, process.env.JWT_SECRET);
+
+    const token = jwt.sign({ manpowerId: manpower._id }, process.env.JWT_SECRET);
 
     res.status(200).json({
       message: "Login successful",
       data: {
         token,
+        otp,
         manpower: manpower,
       },
     });
@@ -268,13 +371,13 @@ const loginManpower = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
-};
+}
 
-const YourProfileUpdate = async (req, res) => {
+exports.YourProfileUpdate = async (req, res) => {
   try {
     let ProfileUpdate = req.files["profile"];
     req.body.pro = ProfileUpdate[0].path;
-    const user = await ManPower.findOneAndUpdate(
+    const user = await User.findOneAndUpdate(
       { _id: req.params.id },
       {
         $set: {
@@ -293,24 +396,24 @@ const YourProfileUpdate = async (req, res) => {
       .status(500)
       .send({ status: 500, message: "Server error" + error.message });
   }
-};
+}
 
-const getAllManpower = async (req, res) => {
+exports.getAllManpower = async (req, res) => {
   try {
-    const users = await ManPower.find().lean();
+    const users = await User.find({userType: "manpower" }).lean();
     res.status(200).json({message:"users fetched successfully", data:users});
   } catch (err) {
     console.error(err);
     res.status(500).json({error:err.message});
   }
-};
+}
 
-const getManpower = async (req, res) => {
+exports.getManpower = async (req, res) => {
   const { manpowerId } = req.params;
 
   try {
     // Check if a user with the given userId exists in the database
-    const user = await ManPower.findById(manpowerId).lean();
+    const user = await User.findById(manpowerId).lean();
 
     if (!user) {
       res.status(404).json({ message: "User not found" });
@@ -322,12 +425,12 @@ const getManpower = async (req, res) => {
     console.error(err);
     return res.status(500).json({ error:err.message });
   }
-};
+}
 
-const DeleteManpower = async (req, res) => {
+exports.DeleteManpower = async (req, res) => {
   const { manpowerId } = req.params;
   try {
-    const user = await ManPower.findByIdAndDelete(manpowerId);
+    const user = await User.findByIdAndDelete(manpowerId);
     if (!user) {
       res.status(404).json({ message: "Manpower not found" });
     }
@@ -338,18 +441,7 @@ const DeleteManpower = async (req, res) => {
     console.error(err);
     return res.status(500).json({ error: err.message });
   }
-};
+}
 
 
-module.exports = {
-  signupManpower,
-  detailSignup,
-  workDetails,
-  manpowerDocument,
-  verifyOtp,
-  loginManpower,
-  YourProfileUpdate,
-  getAllManpower,
-  getManpower,
-  DeleteManpower,
-};
+

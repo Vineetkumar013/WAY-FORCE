@@ -10,7 +10,12 @@ const {
   getAllManpower,
   getManpower,
   DeleteManpower,
-} = require("../controller/ManPowerCtrl.js");
+  registrationManpower,
+  sendotpManpower
+} = require("../controller/ManPowerCtrl");
+
+const auth = require("../middleware/auth")
+
 const router = express.Router();
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
@@ -33,10 +38,13 @@ cloudinary.config({
   api_secret: "wrcHAy3wkDu8jhv0UHYlMpYmdDQ",
 });
 
+
+router.post("/registration/Manpower", registrationManpower);
+router.post("/sendotpManpower", sendotpManpower);
 router.post("/signup", signupManpower);
 router.post("/login", loginManpower);
 router.post("/verify/otp/:id", verifyOtp);
-router.put("/fill/details/:id", detailSignup);
+router.put("/fill/details/:id",/*auth.verifyToken,*/ detailSignup);
 router.post("/work-details/:id", workDetails);
 router.put(
   "/upload/documents/:id",
