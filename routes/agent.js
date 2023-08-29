@@ -44,6 +44,9 @@ var cpUpload = upload.fields([{ name: 'aadhar', maxCount: 1 }, { name: 'pan', ma
 
 
 
+
+
+
 router.post("/registration/Agent", registrationAgent);
 // router.post("/sendotp/Employer", sendotpEmployer);
 // router.post("/signup", signupEmployer);
