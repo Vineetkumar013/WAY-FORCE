@@ -4,6 +4,10 @@ const { createBookingByEmployer,getBookingByEmployer,getBookingByManpower,delete
 
 const bookingRouter = express.Router()
 
+
+
+
+
 // //CUSTOMER
 bookingRouter.post('/', /*Auth*/  createBookingByEmployer)
 bookingRouter.get('/getBookingByEmployer/:employerId', /*Auth*/  getBookingByEmployer)
